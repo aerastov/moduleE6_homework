@@ -7,6 +7,11 @@ ws_urlpatterns = [
     # re_path('ws/chat/', WSConsumer.as_asgi()),
 ]
 
+channel_routing = {
+    'websocket.connect': 'chat_server.consumers.WSConsumer.as_asgi()',
+    'websocket.receive': 'chat_server.consumers.WSConsumer.as_asgi()',
+    'websocket.disconnect': 'chat_server.consumers.WSConsumer.as_asgi()',
+}
 
 # websocket_urlpatterns = [
 #     re_path(r'ws/chat/(?P<room_name>\w+)', consumers.ChatRoomConsumer),
