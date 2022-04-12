@@ -13,6 +13,11 @@ class UserProfile(models.Model):
     room = models.OneToOneField(Room, on_delete=models.SET_NULL, null=True)
     # online = models.BooleanField(default=False)
 
+    def user_list(self):
+        users = UserProfile.objects.filter().order_by('name')
+        # users = "qwerty"
+        return list(users)
+
 
 class Message(models.Model):
     id = models.AutoField(primary_key=True, unique=True)
