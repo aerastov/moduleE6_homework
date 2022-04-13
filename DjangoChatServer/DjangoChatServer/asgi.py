@@ -15,7 +15,6 @@ from channels.routing import ProtocolTypeRouter, URLRouter
 from chat_server.routing import ws_urlpatterns
 
 
-
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'DjangoChatServer.settings')
 
 application = ProtocolTypeRouter({
