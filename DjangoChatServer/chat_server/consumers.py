@@ -1,14 +1,15 @@
 import json
-from .models import UserProfile, Room
+from .models import UserProfile, Room, Message
 from channels.generic.websocket import WebsocketConsumer
 from asgiref.sync import async_to_sync
 
 
 def userlist():
-    objects = UserProfile.objects.filter()
+    objects = UserProfile.objects.filter().order_by('-name')
     list = {'UserList': 'UserList'}
     for object in objects:
         list[object.id] = object.name
+        # list.insert(0, [object.id, object.name])
     return list
 
 def roomlist():
@@ -18,6 +19,14 @@ def roomlist():
         list[object.id] = object.name
     return list
 
+def messagelist(id):
+    objects = Message.objects.filter(room_id=id)
+    name = Room.objects.get(id=id).name
+    list = {'MessageList': name}
+    for object in objects:
+        message = {object.author.name: object.text}
+        list[object.id] = message
+    return list
 
 class WSConsumer(WebsocketConsumer):
     def connect(self):
@@ -40,8 +49,8 @@ class WSConsumer(WebsocketConsumer):
 
     def receive(self, text_data=None, bytes_data=None):
         message = json.loads(text_data)
-        print('receive path:', self.scope["path"])
-        print('receive message:', message)
+        print('incoming path:', self.scope["path"])
+        print('incoming instructions message:', message)
 
         if 'load' in message:
             if message['load'] == "users":
@@ -50,6 +59,16 @@ class WSConsumer(WebsocketConsumer):
             if message['load'] == 'rooms':
                 self.send(json.dumps(roomlist()))
                 print('список комнат отправлен клиенту')
+            if message['load'] == 'messageList':
+                # if message['oldroom_id'] != None:
+                #     oldroom_id = str(message['oldroom_id'])
+                #     async_to_sync(self.channel_layer.group_discard)(oldroom_id, self.channel_name)
+                #     print('Произошло отключение от комнаты', oldroom_id)
+                # newroom_id = str(message['newroom_id'])
+                # async_to_sync(self.channel_layer.group_add)(newroom_id, self.channel_name)
+                # print('Произошло подключение к комнате', newroom_id)
+                self.send(json.dumps(messagelist(message['newroom_id'])))
+                print('список сообщений комнаты ID:', message['newroom_id'], 'отправлен клиенту')
 
         if 'create_user' in message:
             name = message['create_user']
@@ -124,10 +143,43 @@ class WSChat(WebsocketConsumer):
     def disconnect(self, close_code):
         async_to_sync(self.channel_layer.group_discard)("all_chat", self.channel_name)
 
-    def all_room(self, text_data=None):
+    def incoming_message(self, text_data=None):
         message = text_data
-        print('order for all rooms:', message)
+        print('incoming message from group:', message)
+        if message['order'] == "accept_message":
+            name = message['name']
+            message = message['message']
+            self.send(json.dumps({'message': message, 'name': name}))
+            print('сообщение принято клиентом')
 
-    #     # Создаём сообщение в БД
-    #     Message.objects.create(text=message)
+    def all_chats(self, text_data=None):
+        message = text_data
+        print('incoming message from group:', message)
+
+    def receive(self, text_data=None, bytes_data=None):
+        message = json.loads(text_data)
+        print('incoming path:', self.scope["path"])
+        print('incoming instructions message:', message)
+
+        if 'usersendcommandroom' in message:
+            if message['usersendcommandroom'] == 'roomselect':
+                if message['oldroom_id'] != '':
+                    oldroom_id = str(message['oldroom_id'])
+                    async_to_sync(self.channel_layer.group_discard)(oldroom_id, self.channel_name)
+                    print('Произошло отключение от комнаты', oldroom_id)
+                newroom_id = str(message['newroom_id'])
+                async_to_sync(self.channel_layer.group_add)(newroom_id, self.channel_name)
+                print('Произошло подключение к комнате', newroom_id)
+
+            if message['usersendcommandroom'] == 'message':
+                room_id = str(message['room_id'])
+                user_id = message['userid']
+                username = UserProfile.objects.get(id=user_id).name
+                message = message['message']
+                message_save = Message(author=UserProfile.objects.get(id=user_id), room=Room.objects.get(id=room_id), text=message)
+                message_save.save()
+                print('Сообщение', message, 'сохранено в базе')
+                async_to_sync(self.channel_layer.group_send)(room_id, {"type": "incoming_message", "order": "accept_message", "name": username, "message": message})
+                print('Сообщение', message, 'отправлено в комнату', room_id)
+
 
