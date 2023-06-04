@@ -16,18 +16,20 @@ e-mail: a.erastov@gmail.com
 Группа SkillFactory: FPW-36  
 
 Для запуска сервера необходим IDE (я использую PyCharm), в котором установить фреймворк Django  
-и следующие библиотеки:  
+и следующие библиотеки:
+pip install django==3.2
+pip install djangorestframework==3.13.1
+pip install django-cors-headers==3.11.0
+pip install easy-thumbnails==2.8.1 
+pip install channels==3.0.3
 
-pip install django  
-pip install djangorestframework  
-pip install django-cors-headers  
-pip install easy-thumbnails
-pip install channels
+Или установить все нужные библиотеки командой:
+pip install -r requirements.txt
 
 Команда запуска сервера стандартная:
 python manage.py runserver
 
-Для запуска клиента нужно скопировать на комьютер файлы из папки "Клиент на JS"  
+Для запуска клиента нужно скопировать на компьютер файлы из папки "Клиент на JS"  
 и запустить в браузере index.html  
 Клиент проверялся в браузере Yandex
 Возможно запустить в разных вкладках копии клиента и переписываться от имени разных  
